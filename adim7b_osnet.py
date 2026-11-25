@@ -9,18 +9,19 @@ from adim3_takip import Takipci, cift_kutulari_ayikla, kapsama
 from adim4_sahip import otomatik_sec, tiklanani_bul, fare, ciz as sahip_ciz
 from adim5_konum import yatay_hata, kesik_mi, mesafe_tahmin, yumusat, konum_ciz
 from adim6_hareket import hareket_karari, hareket_ciz
+from adim8_olcum import Zamanlayici, zaman_ciz          # YENİ
 
 
 PENCERE = "Valiz 2 - OSNet"
 MODEL_YOLU = "modeller/osnet_x0_25_msmt17.onnx"
-BENZERLIK_ESIGI = 0.7   # kosinüs benzerliği; histogramdakinden farklı bir ölçek, test edip ayarlayacağız
+BENZERLIK_ESIGI = 0.7
 ONAY_KARE = 5
 GALERI_BOYUTU = 10
 GALERI_ARALIK = 10
 
-# OSNet eğitilirken resimler bu ortalama ve sapmayla normalize edilmiş (ImageNet değerleri, RGB sırası)
 ORTALAMA = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 SAPMA = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+
 
 def baska_kisiyle_ortusuyor(sahip_kutu, gorunenler, sahip_id):
     """Sahibin kutusu başka biriyle örtüşüyorsa galeriye örnek eklemeyelim."""
@@ -29,8 +30,10 @@ def baska_kisiyle_ortusuyor(sahip_kutu, gorunenler, sahip_id):
             return True
     return False
 
+
 def osnet_yukle(yol):
     return ort.InferenceSession(yol, providers=["CPUExecutionProvider"])
+
 
 def gorunum_cikar(oturum, kare, kutu):
     """Kişinin kutusundan 512 elemanlı, uzunluğu 1 olan bir vektör. Olmazsa None."""
@@ -39,17 +42,13 @@ def gorunum_cikar(oturum, kare, kutu):
     if parca.shape[0] < 4 or parca.shape[1] < 4:
         return None
 
-    # 1) Ağın beklediği boyuta getir: 128 genişlik x 256 yükseklik
     parca = cv2.resize(parca, (128, 256))
-    # 2) BGR -> RGB, 0-255 -> 0-1
     parca = cv2.cvtColor(parca, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
-    # 3) Eğitimdeki gibi normalize et
     parca = (parca - ORTALAMA) / SAPMA
-    # 4) (yükseklik, genişlik, kanal) -> (1, kanal, yükseklik, genişlik)
     girdi = parca.transpose(2, 0, 1)[np.newaxis]
 
-    vektor = oturum.run(None, {"x": girdi})[0][0]       # 512 sayı
-    return vektor / (np.linalg.norm(vektor) + 1e-6)    # uzunluğu 1 yap
+    vektor = oturum.run(None, {"x": girdi})[0][0]
+    return vektor / (np.linalg.norm(vektor) + 1e-6)
 
 
 def benzerlik(a, b):
@@ -82,6 +81,7 @@ def main():
     model = YOLO("yolo11n.pt")
     oturum = osnet_yukle(MODEL_YOLU)
     takipci = Takipci()
+    zaman = Zamanlayici()                                # YENİ
 
     cv2.namedWindow(PENCERE)
     durum = {"tik": None}
@@ -98,15 +98,19 @@ def main():
     aday_sayac = 0
 
     while True:
+        zaman.basla()                                    # YENİ
         ok, kare = cap.read()
         if not ok:
             break
+        zaman.tur("kamera")                              # YENİ
         h, w = kare.shape[:2]
         kare_no += 1
 
         kisiler = kisileri_bul(model, kare)
+        zaman.tur("yolo")                                # YENİ
         kisiler = cift_kutulari_ayikla(kisiler)
         gorunenler = takipci.guncelle(kisiler)
+        zaman.tur("takip")                               # YENİ
 
         if durum["tik"] is not None:
             secilen = tiklanani_bul(gorunenler, durum["tik"])
@@ -151,6 +155,8 @@ def main():
             else:
                 aday_id, aday_sayac = None, 0
 
+        zaman.tur("osnet")                               # YENİ
+
         if sahip_id != onceki_sahip:
             hata_y = None
             mesafe_y = None
@@ -166,31 +172,29 @@ def main():
             konum_ciz(kare, kutu, hata_y, mesafe_y, kesik_mi(kutu, h))
 
         reid_ciz(kare, gorunenler, benzerlikler, len(galeri), aday_id, aday_sayac)
-        
+
         sahip_var = sahip_id is not None and sahip_id in gorunenler
         kesik = kesik_mi(gorunenler[sahip_id], h) if sahip_var else False
         v_cmd, w_cmd, hareket_durumu = hareket_karari(sahip_var, hata_y, mesafe_y, kesik)
         hareket_ciz(kare, v_cmd, w_cmd, hareket_durumu)
+
+        zaman_ciz(kare, zaman)                           # YENİ
         cv2.imshow(PENCERE, kare)
         tus = cv2.waitKey(1) & 0xFF
-
+        zaman.tur("ekran")                               # YENİ
 
         if tus == ord("q"):
             break
         if tus == ord("r"):
             sahip_id = None
 
-
+    zaman.rapor()                                        # YENİ
     cap.release()
     cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
 
 
 

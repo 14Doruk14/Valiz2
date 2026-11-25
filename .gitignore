@@ -1,4 +1,4 @@
-# Büyük / yeniden indirilebilen dosyalar
+﻿# Büyük / yeniden indirilebilen dosyalar
 *.pt
 *.onnx
 modeller/
@@ -15,5 +15,3 @@ __pycache__/
 # Editör
 .vscode/
 
-# Step 8 not finished yet (remove this line when it works)
-adim8_olcum.py
