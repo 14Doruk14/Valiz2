@@ -12,7 +12,6 @@ A suitcase robot that follows its owner, built step by step from scratch.
 | adim6_hareket.py | Motion command (linear V / angular W) |
 | adim7_reid.py | Re-identification: color histogram (7a) |
 | adim7b_osnet.py | Re-identification: OSNet (7b, chosen) |
-| adim8_olcum.py | Per-stage timing / FPS and video recording |
 
 Not in the repo (too large): `yolo11n.pt` (downloaded automatically by ultralytics) and `modeller/osnet_x0_25_msmt17.onnx`.
 
