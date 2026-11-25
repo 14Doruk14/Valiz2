@@ -1,0 +1,16 @@
+# Büyük / yeniden indirilebilen dosyalar
+*.pt
+*.onnx
+modeller/
+
+# Test videoları
+kayitlar/
+*.mp4
+*.avi
+
+# Python ön belleği
+__pycache__/
+*.pyc
+
+# Editör
+.vscode/
