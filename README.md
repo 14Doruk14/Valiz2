@@ -1,4 +1,4 @@
-# Valiz 2
+# Owner-Following Suitcase Robot (Valiz 2)
 
 A suitcase robot that follows its owner, built step by step from scratch.
 
