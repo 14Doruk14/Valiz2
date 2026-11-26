@@ -51,12 +51,15 @@ def fare(olay, x, y, bayraklar, durum):
         durum["tik"] = (x, y)
 
 
-def ciz(kare, gorunenler, sahip_id):
+def ciz(kare, gorunenler, sahip_id, ust_bosluk=0):
     for iz_id, (x1, y1, x2, y2, guven) in gorunenler.items():
         if iz_id == sahip_id:
             cv2.rectangle(kare, (x1, y1), (x2, y2), (0, 255, 0), 4)
-            cv2.putText(kare, f"SAHIP (ID {iz_id})", (x1, y1 - 8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            yazi = f"SAHIP (ID {iz_id})"
+            (yazi_gen, yazi_yuk), _ = cv2.getTextSize(yazi, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
+            yx = min(x1, kare.shape[1] - yazi_gen - 5)   # sağdan taşmasın
+            yy = max(y1 - 8, ust_bosluk + yazi_yuk + 5)  # üstten / yazı şeridine taşmasın
+            cv2.putText(kare, yazi, (yx, yy), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         else:
             cv2.rectangle(kare, (x1, y1), (x2, y2), (160, 160, 160), 1)
             cv2.putText(kare, f"ID {iz_id}", (x1, y1 - 5),
